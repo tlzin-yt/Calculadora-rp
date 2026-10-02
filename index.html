@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Munição - Tropa do Israel</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        israel: {
+                            50: '#e6f1fe',
+                            500: '#0284c7',
+                            600: '#026aa2',
+                            700: '#035381',
+                            900: '#0c2340',
+                            dark: '#07101e'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #07101e;
+            color: #f1f5f9;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0c2340;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #0284c7;
+            border-radius: 3px;
+        }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-sky-500 selection:text-white relative">
+
+    <!-- Background Image Container -->
+    <div id="bgImageContainer" class="absolute inset-0 z-0 bg-cover bg-center pointer-events-none transition-all duration-300 opacity-20" style="background-image: url('');"></div>
+    <div class="absolute inset-0 z-0 bg-[#07101e]/85 pointer-events-none" id="bgOverlay"></div>
+
+    <!-- Header -->
+    <header class="bg-israel-900/90 backdrop-blur-md border-b border-sky-500/20 sticky top-0 z-50 shadow-xl">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center shadow-lg shadow-sky-500/30">
+                    <i class="fa-solid fa-crosshairs text-white text-sm"></i>
+                </div>
+                <div>
+                    <h1 class="text-base sm:text-lg font-extrabold tracking-wider bg-gradient-to-r from-sky-400 to-white bg-clip-text text-transparent">TROPA DO ISRAEL</h1>
+                    <p class="text-[10px] text-sky-400/80 font-medium">Calculadora de Munições (Base: 100un)</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3 flex-wrap justify-center">
+                <!-- Botão Configurar Fundo -->
+                <button onclick="openBgModal()" class="bg-israel-dark/80 hover:bg-israel-dark text-sky-400 border border-sky-500/30 px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-image"></i> Imagem de Fundo
+                </button>
+
+                <!-- Modo Abas -->
+                <div class="bg-israel-dark p-1 rounded-xl border border-sky-500/30 flex text-xs">
+                    <button onclick="switchTab('calc')" id="tabCalcBtn" class="px-3 py-1.5 rounded-lg font-bold bg-sky-600 text-white transition">
+                        <i class="fa-solid fa-calculator mr-1"></i> Calculadora
+                    </button>
+                    <button onclick="switchTab('reverse')" id="tabReverseBtn" class="px-3 py-1.5 rounded-lg font-medium text-slate-300 hover:text-white transition">
+                        <i class="fa-solid fa-coins mr-1"></i> Quanto dá R$?
+                    </button>
+                </div>
+
+                <!-- Toggle Parceria -->
+                <div class="flex items-center gap-2 bg-israel-dark/80 px-3 py-1.5 rounded-xl border border-sky-500/30">
+                    <span class="text-[10px] text-slate-400 uppercase font-semibold">Parceria:</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="parceriaToggle" class="sr-only peer" onchange="toggleParceria()">
+                        <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-sky-500"></div>
+                    </label>
+                    <span id="parceriaStatusText" class="text-xs font-bold text-slate-300 w-6">NÃO</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 py-5 w-full flex-grow relative z-10">
+        
+        <!-- ABA 1: Calculadora Principal -->
+        <div id="viewCalc" class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            
+            <!-- Esquerda: Tabela Compacta de Produtos -->
+            <div class="lg:col-span-8 bg-israel-900/80 backdrop-blur-md border border-sky-500/20 rounded-2xl p-4 shadow-xl flex flex-col">
+                <div class="flex items-center justify-between mb-3 pb-2 border-b border-sky-500/20">
+                    <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-box-archive text-sky-400"></i> Digite a Quantidade de Munições Desejada
+                    </h2>
+                    <button onclick="clearAllQuantities()" class="text-[11px] text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 px-2.5 py-1 rounded-lg border border-rose-500/30 transition flex items-center gap-1">
+                        <i class="fa-solid fa-rotate-right"></i> Zerar Tudo
+                    </button>
+                </div>
+
+                <!-- Tabela Compacta -->
+                <div class="overflow-x-auto max-h-[500px] overflow-y-auto pr-1">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-israel-dark/90 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-700">
+                                <th class="p-2.5 rounded-l-lg">Munição</th>
+                                <th class="p-2.5 text-center">Preço (100un)</th>
+                                <th class="p-2.5 text-center">Qtd Munições</th>
+                                <th class="p-2.5 text-right rounded-r-lg">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody id="catalogTableBody" class="divide-y divide-slate-800/60">
+                            <!-- Preenchido via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Direita: Resumo Rápido & Recibo -->
+            <div class="lg:col-span-4 flex flex-col gap-4">
+                <div class="bg-israel-900/90 backdrop-blur-md border border-sky-500/30 rounded-2xl p-4 shadow-xl sticky top-20 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between pb-2.5 border-b border-sky-500/20 mb-3">
+                            <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-receipt text-sky-400"></i> Resumo da Compra
+                            </h2>
+                            <span id="modeDisplay" class="text-[10px] font-bold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded">Preço Normal</span>
+                        </div>
+
+                        <!-- Resumo Itens Selecionados -->
+                        <div id="quickSummaryList" class="space-y-1.5 max-h-[200px] overflow-y-auto pr-1 mb-3 text-xs">
+                            <div class="text-center py-6 text-slate-500 text-xs">
+                                <p>Nenhum item selecionado.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Totais e Botão Recibo -->
+                    <div class="bg-israel-dark/90 rounded-xl p-3.5 border border-sky-500/20 space-y-2.5">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-400">Total de Munições:</span>
+                            <span id="totalUnitsSum" class="font-bold text-white">0 un</span>
+                        </div>
+                        <div class="flex justify-between text-base pt-2 border-t border-slate-700 font-extrabold">
+                            <span class="text-sky-400">VALOR TOTAL:</span>
+                            <span id="grandTotal" class="text-emerald-400">$ 0</span>
+                        </div>
+
+                        <button onclick="openReceiptModal()" class="w-full mt-1 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold py-2.5 px-4 rounded-xl shadow-lg shadow-sky-500/20 transition flex items-center justify-center gap-2 text-xs">
+                            <i class="fa-solid fa-file-invoice-dollar"></i> Gerar e Copiar Recibo
+                        </button>
+                        <button onclick="openFarmeModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-sky-400 border border-sky-500/30 font-semibold py-2 rounded-xl transition flex items-center justify-center gap-2 text-[11px]">
+                            <i class="fa-solid fa-coins"></i> Calcular Farme ($360/un)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ABA 2: Quanto dá X Reais em Munições -->
+        <div id="viewReverse" class="hidden max-w-2xl mx-auto bg-israel-900/90 backdrop-blur-md border border-sky-500/30 rounded-2xl p-6 shadow-xl">
+            <div class="flex items-center justify-between pb-3 border-b border-sky-500/20 mb-4">
+                <h2 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-coins text-amber-400"></i> Calculadora Reversa (Quanto dá R$ X em Munição?)
+                </h2>
+            </div>
+
+            <p class="text-xs text-slate-300 mb-4 bg-sky-500/10 p-3 rounded-xl border border-sky-500/20">
+                Selecione a munição desejada e digite o valor em dinheiro ($) que o cliente possui para calcular quantas unidades ele consegue comprar!
+            </p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1 font-medium">Selecione a Munição:</label>
+                    <select id="reverseMunitionSelect" onchange="calculateReverse()" class="w-full bg-israel-dark border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 font-bold">
+                        <!-- Preenchido via JS -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1 font-medium">Valor Disponível do Cliente ($):</label>
+                    <input type="number" id="reverseBudgetInput" min="0" step="1000" value="50000" oninput="calculateReverse()" class="w-full bg-israel-dark border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 font-bold text-emerald-400">
+                </div>
+            </div>
+
+            <!-- Resultado da Simulação Reversa -->
+            <div class="bg-israel-dark/95 rounded-xl p-5 border border-sky-500/30 space-y-3">
+                <div class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Resultado da Simulação:</div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                    <div class="bg-slate-800/80 p-3 rounded-lg border border-slate-700 text-center">
+                        <div class="text-[10px] text-slate-400">Munições Adquiridas</div>
+                        <div id="revTotalUnitsOutput" class="text-lg font-black text-sky-400 mt-0.5">0 un</div>
+                    </div>
+                    <div class="bg-slate-800/80 p-3 rounded-lg border border-slate-700 text-center">
+                        <div class="text-[10px] text-slate-400">Pacotes (100un)</div>
+                        <div id="revPacksOutput" class="text-lg font-black text-white mt-0.5">0</div>
+                    </div>
+                    <div class="bg-slate-800/80 p-3 rounded-lg border border-slate-700 text-center">
+                        <div class="text-[10px] text-slate-400">Troco Restante</div>
+                        <div id="revChangeOutput" class="text-lg font-black text-amber-400 mt-0.5">$ 0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modal Configurar Imagem de Fundo -->
+    <div id="bgModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-israel-900 border border-sky-500/40 rounded-2xl w-full max-w-md p-6 shadow-2xl relative animate-in fade-in duration-200">
+            <div class="flex items-center justify-between pb-3 border-b border-sky-500/20 mb-4">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-image text-sky-400"></i> Imagem de Fundo do Relatório/App
+                </h3>
+                <button onclick="closeModal('bgModal')" class="text-slate-400 hover:text-white text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-300 mb-4 bg-sky-500/10 p-3 rounded-xl border border-sky-500/20">
+                Cole o link direto da imagem (URL) que deseja usar como plano de fundo. Você também pode ajustar a opacidade.
+            </p>
+
+            <div class="space-y-4 mb-5">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1 font-medium">Link da Imagem (URL):</label>
+                    <input type="text" id="bgUrlInput" placeholder="https://exemplo.com/imagem.jpg" class="w-full bg-israel-dark border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1 font-medium">Opacidade do Fundo (%):</label>
+                    <div class="flex items-center gap-3">
+                        <input type="range" id="bgOpacityRange" min="5" max="80" value="20" oninput="updateBackground()" class="w-full accent-sky-500 cursor-pointer">
+                        <span id="opacityValText" class="text-xs font-bold text-sky-400 w-10 text-right">20%</span>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="applyPresetBg('https://i.ibb.co/6y4j1G2/muni.jpg')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-lg text-[11px] transition">
+                        Usar Imagem Padrão
+                    </button>
+                    <button onclick="clearBackground()" class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 px-3 py-1.5 rounded-lg text-[11px] transition">
+                        Remover Fundo
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2">
+                <button onclick="closeModal('bgModal')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium transition">
+                    Fechar
+                </button>
+                <button onclick="saveBackground()" class="px-5 py-2 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-sky-500/20 transition">
+                    Salvar Fundo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Recibo para Copiar -->
+    <div id="receiptModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-israel-900 border border-sky-500/40 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative animate-in fade-in duration-200">
+            <div class="flex items-center justify-between pb-3 border-b border-sky-500/20 mb-4">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-receipt text-sky-400"></i> Recibo de Venda - Tropa do Israel
+                </h3>
+                <button onclick="closeModal('receiptModal')" class="text-slate-400 hover:text-white text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Client Info Inputs -->
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1 font-medium">Nome do Cliente:</label>
+                    <input type="text" id="clientNameInput" placeholder="Ex: João Silva" class="w-full bg-israel-dark border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1 font-medium">Vendedor:</label>
+                    <input type="text" id="sellerNameInput" placeholder="Ex: Israel" class="w-full bg-israel-dark border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500">
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-xs text-slate-400 mb-1 font-medium">Recibo Formatado (Pronto para copiar):</label>
+                <textarea id="receiptTextOutput" readonly rows="8" class="w-full bg-israel-dark/90 font-mono text-xs text-slate-200 p-3 rounded-xl border border-slate-700/80 focus:outline-none select-all"></textarea>
+            </div>
+
+            <div class="flex justify-end gap-2">
+                <button onclick="closeModal('receiptModal')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium transition">
+                    Fechar
+                </button>
+                <button onclick="copyReceipt()" class="px-5 py-2 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-sky-500/20 transition flex items-center gap-2">
+                    <i class="fa-solid fa-copy"></i> Copiar Recibo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Calculadora de Farme -->
+    <div id="farmeModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-israel-900 border border-sky-500/40 rounded-2xl w-full max-w-md p-6 shadow-2xl relative animate-in fade-in duration-200">
+            <div class="flex items-center justify-between pb-3 border-b border-sky-500/20 mb-4">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-coins text-amber-400"></i> Calculadora de Farme
+                </h3>
+                <button onclick="closeModal('farmeModal')" class="text-slate-400 hover:text-white text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-300 mb-4 bg-sky-500/10 p-3 rounded-xl border border-sky-500/20">
+                O preço base de farm da tabela oficial é <strong class="text-amber-400">$ 360,00</strong> por unidade.
+            </p>
+
+            <div class="space-y-4 mb-5">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1 font-medium">Quantidade de Itens Craftados/Ingredientes:</label>
+                    <input type="number" id="farmeQtdInput" min="1" value="100" oninput="calculateFarme()" class="w-full bg-israel-dark border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500 font-bold">
+                </div>
+                <div class="bg-israel-dark/80 p-3 rounded-xl border border-slate-700/80 space-y-1.5">
+                    <div class="flex justify-between text-xs">
+                        <span class="text-slate-400">Preço Unitário:</span>
+                        <span class="text-white font-bold">$ 360.00</span>
+                    </div>
+                    <div class="flex justify-between text-sm pt-2 border-t border-slate-700 font-bold">
+                        <span class="text-sky-400">TOTAL DO FARME:</span>
+                        <span id="farmeTotalOutput" class="text-amber-400 text-base">$ 36.000</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end">
+                <button onclick="closeModal('farmeModal')" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold transition">
+                    Entendido
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-emerald-600 text-white px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2 text-xs font-semibold transform translate-y-20 opacity-0 transition-all duration-300 z-50 pointer-events-none">
+        <i class="fa-solid fa-circle-check text-base"></i>
+        <span id="toastMessage">Ação realizada com sucesso!</span>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-israel-900/40 border-t border-sky-500/10 py-3 text-center text-[10px] text-slate-500 relative z-10">
+        Tropa do Israel © 2026 - Todos os Direitos Reservados
+    </footer>
+
+    <!-- Script Principal -->
+    <script>
+        // Dados oficiais da Tropa do Israel (Preço por 100 unidades)
+        const munitionCatalog = [
+            { id: 1, name: "MAGNUM", priceNormal: 33000, priceParceria: 30000 },
+            { id: 2, name: "HK P7M10", priceNormal: 33000, priceParceria: 30000 },
+            { id: 3, name: "DESERT EAGLE", priceNormal: 33000, priceParceria: 30000 },
+            { id: 4, name: "PT MK2", priceNormal: 39000, priceParceria: 36000 },
+            { id: 5, name: "MP5", priceNormal: 45000, priceParceria: 42000 },
+            { id: 6, name: "THOMPSON", priceNormal: 45000, priceParceria: 42000 },
+            { id: 7, name: "MP5 MK2", priceNormal: 51000, priceParceria: 48000 },
+            { id: 8, name: "MTAR", priceNormal: 57000, priceParceria: 54000 },
+            { id: 9, name: "AK 74", priceNormal: 48000, priceParceria: 45000 },
+            { id: 10, name: "FAMAS", priceNormal: 48000, priceParceria: 45000 },
+            { id: 11, name: "M60", priceNormal: 48000, priceParceria: 45000 },
+            { id: 12, name: "FAMAS S MK2", priceNormal: 54000, priceParceria: 51000 },
+            { id: 13, name: "AK 47", priceNormal: 54000, priceParceria: 51000 },
+            { id: 14, name: "M4A1", priceNormal: 54000, priceParceria: 51000 },
+            { id: 15, name: "SCAR", priceNormal: 54000, priceParceria: 51000 },
+            { id: 16, name: "PARAFAL", priceNormal: 63000, priceParceria: 60000 },
+            { id: 17, name: "G3", priceNormal: 69000, priceParceria: 66000 }
+        ];
+
+        let quantities = {};
+        let isParceria = false;
+
+        // Inicialização
+        window.onload = function() {
+            renderCatalogTable();
+            populateReverseSelect();
+            updateSummary();
+            loadSavedBackground();
+        };
+
+        // Formatar dinheiro
+        function formatMoney(value) {
+            return '$ ' + value.toLocaleString('pt-BR');
+        }
+
+        // Trocar Abas
+        function switchTab(tab) {
+            const btnCalc = document.getElementById('tabCalcBtn');
+            const btnReverse = document.getElementById('tabReverseBtn');
+            const viewCalc = document.getElementById('viewCalc');
+            const viewReverse = document.getElementById('viewReverse');
+
+            if (tab === 'calc') {
+                btnCalc.className = "px-3 py-1.5 rounded-lg font-bold bg-sky-600 text-white transition";
+                btnReverse.className = "px-3 py-1.5 rounded-lg font-medium text-slate-300 hover:text-white transition";
+                viewCalc.classList.remove('hidden');
+                viewReverse.classList.add('hidden');
+            } else {
+                btnReverse.className = "px-3 py-1.5 rounded-lg font-bold bg-sky-600 text-white transition";
+                btnCalc.className = "px-3 py-1.5 rounded-lg font-medium text-slate-300 hover:text-white transition";
+                viewReverse.classList.remove('hidden');
+                viewCalc.classList.add('hidden');
+                calculateReverse();
+            }
+        }
+
+        // Renderizar Tabela Compacta
+        function renderCatalogTable() {
+            const tbody = document.getElementById('catalogTableBody');
+            tbody.innerHTML = '';
+
+            munitionCatalog.forEach(item => {
+                const currentPricePer100 = isParceria ? item.priceParceria : item.priceNormal;
+                const qtyUnits = quantities[item.id] || '';
+                const subtotal = ((parseInt(qtyUnits) || 0) / 100) * currentPricePer100;
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-israel-dark/40 transition border-b border-slate-800/40";
+                
+                tr.innerHTML = `
+                    <td class="p-2.5 font-bold text-white">${item.name}</td>
+                    <td class="p-2.5 text-center font-semibold text-emerald-400" id="price-display-${item.id}">${formatMoney(currentPricePer100)} <span class="text-[9px] text-slate-400">(100un)</span></td>
+                    <td class="p-2.5 text-center">
+                        <input type="number" min="0" step="1" value="${qtyUnits}" placeholder="" id="input-qty-${item.id}"
+                            oninput="updateItemQty(${item.id}, this.value)"
+                            class="w-28 bg-israel-dark border border-slate-700 text-center rounded-lg px-2 py-1 text-xs text-white font-bold focus:outline-none focus:border-sky-500">
+                    </td>
+                    <td class="p-2.5 text-right font-bold text-sky-300" id="subtotal-${item.id}">${formatMoney(subtotal)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function updateItemQty(id, val) {
+            const num = parseInt(val);
+            if (isNaN(num) || num <= 0) {
+                delete quantities[id];
+            } else {
+                quantities[id] = num;
+            }
+
+            const item = munitionCatalog.find(m => m.id == id);
+            const currentPricePer100 = isParceria ? item.priceParceria : item.priceNormal;
+            const subtotal = ((parseInt(val) || 0) / 100) * currentPricePer100;
+            
+            const subtotalEl = document.getElementById(`subtotal-${id}`);
+            if (subtotalEl) {
+                subtotalEl.innerText = formatMoney(subtotal);
+            }
+
+            updateSummary();
+        }
+
+        function clearAllQuantities() {
+            quantities = {};
+            renderCatalogTable();
+            updateSummary();
+            showToast('Quantidades limpas!');
+        }
+
+        function toggleParceria() {
+            isParceria = document.getElementById('parceriaToggle').checked;
+            const statusText = document.getElementById('parceriaStatusText');
+            const modeDisplay = document.getElementById('modeDisplay');
+            
+            if (isParceria) {
+                statusText.innerText = 'SIM';
+                statusText.className = 'text-xs font-bold text-emerald-400 w-6';
+                modeDisplay.innerText = 'Preço Parceria';
+                modeDisplay.className = 'text-[10px] font-bold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded';
+            } else {
+                statusText.innerText = 'NÃO';
+                statusText.className = 'text-xs font-bold text-slate-300 w-6';
+                modeDisplay.innerText = 'Preço Normal';
+                modeDisplay.className = 'text-[10px] font-bold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded';
+            }
+
+            munitionCatalog.forEach(item => {
+                const currentPricePer100 = isParceria ? item.priceParceria : item.priceNormal;
+                const priceEl = document.getElementById(`price-display-${item.id}`);
+                if (priceEl) {
+                    priceEl.innerHTML = `${formatMoney(currentPricePer100)} <span class="text-[9px] text-slate-400">(100un)</span>`;
+                }
+                const qty = quantities[item.id] || 0;
+                const subtotal = (qty / 100) * currentPricePer100;
+                const subtotalEl = document.getElementById(`subtotal-${item.id}`);
+                if (subtotalEl) {
+                    subtotalEl.innerText = formatMoney(subtotal);
+                }
+            });
+
+            updateSummary();
+            if(!document.getElementById('viewReverse').classList.contains('hidden')) {
+                calculateReverse();
+            }
+        }
+
+        function updateSummary() {
+            const listContainer = document.getElementById('quickSummaryList');
+            const totalUnitsSumEl = document.getElementById('totalUnitsSum');
+            const grandTotalEl = document.getElementById('grandTotal');
+
+            listContainer.innerHTML = '';
+            let totalUnits = 0;
+            let grandTotal = 0;
+
+            const keys = Object.keys(quantities);
+            if (keys.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="text-center py-6 text-slate-500 text-xs">
+                        <p>Nenhum item selecionado.</p>
+                    </div>
+                `;
+                totalUnitsSumEl.innerText = '0 un';
+                grandTotalEl.innerText = '$ 0';
+                return;
+            }
+
+            keys.forEach(id => {
+                const item = munitionCatalog.find(m => m.id == id);
+                const qty = quantities[id];
+                const pricePer100 = isParceria ? item.priceParceria : item.priceNormal;
+                const subtotal = (qty / 100) * pricePer100;
+
+                totalUnits += qty;
+                grandTotal += subtotal;
+
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between bg-israel-dark/90 p-2 rounded-lg border border-slate-800 text-[11px]';
+                row.innerHTML = `
+                    <span class="font-bold text-white truncate max-w-[120px]">${item.name}</span>
+                    <span class="text-slate-400">${qty.toLocaleString('pt-BR')} un (${formatMoney(subtotal)})</span>
+                `;
+                listContainer.appendChild(row);
+            });
+
+            totalUnitsSumEl.innerText = totalUnits.toLocaleString('pt-BR') + ' un';
+            grandTotalEl.innerText = formatMoney(grandTotal);
+        }
+
+        function populateReverseSelect() {
+            const select = document.getElementById('reverseMunitionSelect');
+            select.innerHTML = '';
+            munitionCatalog.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.id;
+                opt.innerText = item.name;
+                select.appendChild(opt);
+            });
+        }
+
+        function calculateReverse() {
+            const budget = parseFloat(document.getElementById('reverseBudgetInput').value) || 0;
+            const selectedId = document.getElementById('reverseMunitionSelect').value;
+            const item = munitionCatalog.find(m => m.id == selectedId);
+            
+            if (!item) return;
+
+            const pricePer100 = isParceria ? item.priceParceria : item.priceNormal;
+            const pricePerUnit = pricePer100 / 100;
+            
+            const totalUnits = Math.floor(budget / pricePerUnit);
+            const packs = Math.floor(totalUnits / 100);
+            const spent = (totalUnits / 100) * pricePer100;
+            const change = budget - spent;
+
+            document.getElementById('revTotalUnitsOutput').innerText = totalUnits.toLocaleString('pt-BR') + ' un';
+            document.getElementById('revPacksOutput').innerText = packs + ' pacotes';
+            document.getElementById('revChangeOutput').innerText = formatMoney(change);
+        }
+
+        // Funções de Imagem de Fundo
+        function openBgModal() {
+            document.getElementById('bgModal').classList.remove('hidden');
+        }
+
+        function updateBackground() {
+            const opacity = document.getElementById('bgOpacityRange').value;
+            document.getElementById('opacityValText').innerText = opacity + '%';
+            const overlay = document.getElementById('bgOverlay');
+            overlay.style.backgroundColor = `rgba(7, 16, 30, ${1 - (opacity / 100)})`;
+        }
+
+        function applyPresetBg(url) {
+            document.getElementById('bgUrlInput').value = url;
+            saveBackground();
+        }
+
+        function clearBackground() {
+            document.getElementById('bgUrlInput').value = '';
+            localStorage.removeItem('israel_bg_url');
+            document.getElementById('bgImageContainer').style.backgroundImage = 'none';
+            showToast('Fundo removido!');
+            closeModal('bgModal');
+        }
+
+        function saveBackground() {
+            const url = document.getElementById('bgUrlInput').value.trim();
+            const opacity = document.getElementById('bgOpacityRange').value;
+            
+            if (url) {
+                localStorage.setItem('israel_bg_url', url);
+                localStorage.setItem('israel_bg_opacity', opacity);
+                document.getElementById('bgImageContainer').style.backgroundImage = `url('${url}')`;
+                updateBackground();
+                showToast('Imagem de fundo aplicada!');
+            } else {
+                clearBackground();
+            }
+            closeModal('bgModal');
+        }
+
+        function loadSavedBackground() {
+            const savedUrl = localStorage.getItem('israel_bg_url');
+            const savedOpacity = localStorage.getItem('israel_bg_opacity');
+            if (savedUrl) {
+                document.getElementById('bgUrlInput').value = savedUrl;
+                document.getElementById('bgImageContainer').style.backgroundImage = `url('${savedUrl}')`;
+            }
+            if (savedOpacity) {
+                document.getElementById('bgOpacityRange').value = savedOpacity;
+                updateBackground();
+            }
+        }
+
+        function openReceiptModal() {
+            if (Object.keys(quantities).length === 0) {
+                showToast('Selecione ao menos um item!', true);
+                return;
+            }
+            generateReceiptText();
+            document.getElementById('receiptModal').classList.remove('hidden');
+        }
+
+        function openFarmeModal() {
+            calculateFarme();
+            document.getElementById('farmeModal').classList.remove('hidden');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        function calculateFarme() {
+            const qtd = parseInt(document.getElementById('farmeQtdInput').value) || 0;
+            document.getElementById('farmeTotalOutput').innerText = formatMoney(qtd * 360);
+        }
+
+        function generateReceiptText() {
+            const clientName = document.getElementById('clientNameInput').value || 'Não informado';
+            const sellerName = document.getElementById('sellerNameInput').value || 'Tropa do Israel';
+            const parceriaText = isParceria ? 'SIM (Desconto Aplicado)' : 'NÃO';
+            
+            let text = `=================================\n`;
+            text += `   📋 RECIBO - TROPA DO ISRAEL\n`;
+            text += `=================================\n`;
+            text += `👤 Cliente: ${clientName}\n`;
+            text += `🤝 Parceria: ${parceriaText}\n`;
+            text += `💼 Vendedor: ${sellerName}\n`;
+            text += `---------------------------------\n`;
+            text += `📦 ITENS ADQUIRIDOS:\n`;
+
+            let grandTotal = 0;
+            Object.keys(quantities).forEach(id => {
+                const item = munitionCatalog.find(m => m.id == id);
+                const qty = quantities[id];
+                const pricePer100 = isParceria ? item.priceParceria : item.priceNormal;
+                const subtotal = (qty / 100) * pricePer100;
+                grandTotal += subtotal;
+
+                text += `• ${qty.toLocaleString('pt-BR')}x ${item.name} - ${formatMoney(subtotal)}\n`;
+            });
+
+            text += `---------------------------------\n`;
+            text += `💰 VALOR TOTAL: ${formatMoney(grandTotal)}\n`;
+            text += `=================================\n`;
+            text += `   Obrigado pela preferência! 🎯`;
+
+            document.getElementById('receiptTextOutput').value = text;
+        }
+
+        document.getElementById('clientNameInput').addEventListener('input', generateReceiptText);
+        document.getElementById('sellerNameInput').addEventListener('input', generateReceiptText);
+
+        function copyReceipt() {
+            const textarea = document.getElementById('receiptTextOutput');
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showToast('Recibo copiado para a área de transferência!');
+                closeModal('receiptModal');
+            } catch (err) {
+                showToast('Erro ao copiar recibo.', true);
+            }
+        }
+
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            const msgEl = document.getElementById('toastMessage');
+            msgEl.innerText = message;
+            toast.className = `fixed bottom-5 right-5 text-white px-3.5 py-2 rounded-xl shadow-2xl flex items-center gap-2 text-xs font-semibold transform transition-all duration-300 z-50 ${isError ? 'bg-rose-600' : 'bg-emerald-600'}`;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => { toast.classList.add('translate-y-20', 'opacity-0'); }, 3000);
+        }
+    </script>
+</body>
+</html>
